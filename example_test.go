@@ -3,7 +3,7 @@ package auth_test
 import (
 	"fmt"
 
-	auth "github.com/korylprince/go-ad-auth/v3"
+	auth "github.com/Ctere1/go-ad-auth/v1"
 )
 
 func ExampleAuthenticate() {

@@ -1,6 +1,8 @@
-[![pkg.go.dev](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/korylprince/go-ad-auth/v3)
+[![pkg.go.dev](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/Ctere1/go-ad-auth/v1)
 
 # About
+
+This is a fork of the [korylprince/go-ad-auth](https://github.com/korylprince/go-ad-auth) project.  
 
 `go-ad-auth` is a simple wrapper around the great [ldap](https://github.com/go-ldap/ldap) library to help with Active Directory authentication.
 
@@ -8,7 +10,7 @@
 
 Using Go Modules:
 
-`go get github.com/korylprince/go-ad-auth/v3`
+`go get github.com/Ctere1/go-ad-auth/v1`
 
 Using gopkg.in:
 
@@ -19,18 +21,6 @@ Using gopkg.in:
 * [github.com/go-ldap/ldap](https://github.com/go-ldap/ldap)
 * [golang.org/x/text/encoding/unicode](https://pkg.go.dev/golang.org/x/text/encoding/unicode)
 
-If you have any issues or questions [create an issue](https://github.com/korylprince/go-ad-auth/issues).
-
-# API Versions
-
-You should update to the `v3` API when possible. The new API is cleaner, more idiomatic, exposes a lot more functionality, and is fully testable.
-
-`v3` was created to support Go Modules, so it is backwards compatible with `v2`. However, updates made to `v3` are not backported to `v2`.
-
-The `v3` API is almost a complete rewrite of the older [`gopkg.in/korylprince/go-ad-auth.v1`](https://pkg.go.dev/gopkg.in/korylprince/go-ad-auth.v1) API. There are similarities, but `v3` is not backwards-compatible. 
-
-
-One notable difference to be careful of is that while `v1`'s `Login` will return `false` if the user is not in the specified group, `v3`'s `AuthenticateExtended` will return `true` if the user authenticated successfully, regardless if they were in any of the specified groups or not.
 
 # Usage
 
@@ -60,7 +50,7 @@ if !status {
 }
 ```
 
-See more advanced examples on [go.dev](https://pkg.go.dev/github.com/korylprince/go-ad-auth/v3?tab=doc#pkg-examples).
+See more advanced examples on [go.dev](https://pkg.go.dev/github.com/Ctere1/go-ad-auth/v1?tab=doc#pkg-examples).
 
 # Testing
 
@@ -80,10 +70,10 @@ Most tests will be skipped unless you supply the following environment variables
 
 # Nested Groups
 
-Since `v3.1.0`, [`AuthenticateExtended`](https://pkg.go.dev/github.com/korylprince/go-ad-auth/v3?tab=doc#AuthenticateExtended) and [`Conn.ObjectGroups`](https://pkg.go.dev/github.com/korylprince/go-ad-auth/v3?tab=doc#Conn.ObjectGroups) will automatically search for nested groups. For example, if `User A` is a member of `Group A`, and `Group A` is a member of `Group B`, using `Conn.ObjectGroups` on `User A` will return both `Group A` and `Group B`.
+Since `v3.1.0`, [`AuthenticateExtended`](https://pkg.go.dev/github.com/Ctere1/go-ad-auth/v1?tab=doc#AuthenticateExtended) and [`Conn.ObjectGroups`](https://pkg.go.dev/github.com/Ctere1/go-ad-auth/v1?tab=doc#Conn.ObjectGroups) will automatically search for nested groups. For example, if `User A` is a member of `Group A`, and `Group A` is a member of `Group B`, using `Conn.ObjectGroups` on `User A` will return both `Group A` and `Group B`.
 
 # Security
 
 [SQL Injection](https://en.wikipedia.org/wiki/SQL_injection) is a well known attack vector, and most SQL libraries provide mitigations such as [prepared statements](https://en.wikipedia.org/wiki/Prepared_statement). Similarly, [LDAP Injection](https://www.owasp.org/index.php/Testing_for_LDAP_Injection_\(OTG-INPVAL-006\)), while not seen often in the wild, is something we should be concerned with.
 
-Since `v2.2.0`, this library sanitizes inputs (with [`ldap.EscapeFilter`](https://pkg.go.dev/github.com/go-ldap/ldap/v3?tab=doc#EscapeFilter)) that are used to create LDAP filters in library functions, namely [`GetDN`](https://pkg.go.dev/github.com/korylprince/go-ad-auth/v3#Conn.GetDN) and [`GetAttributes`](https://pkg.go.dev/github.com/korylprince/go-ad-auth/v3#Conn.GetAttributes). This means high level functions in this library are protected against malicious inputs. If you use [`Search`](https://pkg.go.dev/github.com/korylprince/go-ad-auth/v3#Conn.Search) or [`SearchOne`](https://pkg.go.dev/github.com/korylprince/go-ad-auth/v3#Conn.SearchOne), take care to sanitize any untrusted inputs you use in your LDAP filter.
+This library sanitizes inputs (with [`ldap.EscapeFilter`](https://pkg.go.dev/github.com/go-ldap/ldap/v3?tab=doc#EscapeFilter)) that are used to create LDAP filters in library functions, namely [`GetDN`](https://pkg.go.dev/github.com/Ctere1/go-ad-auth/v1#Conn.GetDN) and [`GetAttributes`](https://pkg.go.dev/github.com/Ctere1/go-ad-auth/v1#Conn.GetAttributes). This means high level functions in this library are protected against malicious inputs. If you use [`Search`](https://pkg.go.dev/github.com/Ctere1/go-ad-auth/v1#Conn.Search) or [`SearchOne`](https://pkg.go.dev/github.com/Ctere1/go-ad-auth/v1#Conn.SearchOne), take care to sanitize any untrusted inputs you use in your LDAP filter.
