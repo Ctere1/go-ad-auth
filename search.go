@@ -6,7 +6,7 @@ import (
 	ldap "github.com/go-ldap/ldap/v3"
 )
 
-//Search returns the entries for the given search criteria or an error if one occurred.
+// Search returns the entries for the given search criteria or an error if one occurred.
 func (c *Conn) Search(filter string, attrs []string, sizeLimit int) ([]*ldap.Entry, error) {
 	search := ldap.NewSearchRequest(
 		c.Config.BaseDN,
@@ -27,8 +27,8 @@ func (c *Conn) Search(filter string, attrs []string, sizeLimit int) ([]*ldap.Ent
 	return result.Entries, nil
 }
 
-//SearchOne returns the single entry for the given search criteria or an error if one occurred.
-//An error is returned if exactly one entry is not returned.
+// SearchOne returns the single entry for the given search criteria or an error if one occurred.
+// An error is returned if exactly one entry is not returned.
 func (c *Conn) SearchOne(filter string, attrs []string) (*ldap.Entry, error) {
 	search := ldap.NewSearchRequest(
 		c.Config.BaseDN,
@@ -60,8 +60,8 @@ func (c *Conn) SearchOne(filter string, attrs []string) (*ldap.Entry, error) {
 	return result.Entries[0], nil
 }
 
-//GetDN returns the DN for the object with the given attribute value or an error if one occurred.
-//attr and value are sanitized.
+// GetDN returns the DN for the object with the given attribute value or an error if one occurred.
+// attr and value are sanitized.
 func (c *Conn) GetDN(attr, value string) (string, error) {
 	entry, err := c.SearchOne(fmt.Sprintf("(%s=%s)", ldap.EscapeFilter(attr), ldap.EscapeFilter(value)), []string{""})
 	if err != nil {
@@ -71,8 +71,8 @@ func (c *Conn) GetDN(attr, value string) (string, error) {
 	return entry.DN, nil
 }
 
-//GetAttributes returns the *ldap.Entry with the given attributes for the object with the given attribute value or an error if one occurred.
-//attr and value are sanitized.
+// GetAttributes returns the *ldap.Entry with the given attributes for the object with the given attribute value or an error if one occurred.
+// attr and value are sanitized.
 func (c *Conn) GetAttributes(attr, value string, attrs []string) (*ldap.Entry, error) {
 	return c.SearchOne(fmt.Sprintf("(%s=%s)", ldap.EscapeFilter(attr), ldap.EscapeFilter(value)), attrs)
 }
