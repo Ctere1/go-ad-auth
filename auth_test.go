@@ -33,7 +33,7 @@ func TestAuthenticate(t *testing.T) {
 	}
 
 	badConfig = &Config{Server: "127.0.0.1", Port: 1, Security: testConfig.BindSecurity, BaseDN: testConfig.BaseDN}
-	if _, err = Authenticate(badConfig, "go-ad-auth", "invalid password"); !strings.Contains(err.Error(), "Connection error") {
+	if _, err = Authenticate(badConfig, "go-ad-auth", "invalid password"); !strings.Contains(err.Error(), "connection error") {
 		t.Error("Connect error: Expected connection error but got:", err)
 	}
 
@@ -94,7 +94,7 @@ func TestAuthenticateExtended(t *testing.T) {
 	}
 
 	badConfig = &Config{Server: "127.0.0.1", Port: 1, Security: testConfig.BindSecurity, BaseDN: testConfig.BaseDN}
-	if _, _, _, err = AuthenticateExtended(badConfig, "go-ad-auth", "invalid password", []string{""}, nil); !strings.Contains(err.Error(), "Connection error") {
+	if _, _, _, err = AuthenticateExtended(badConfig, "go-ad-auth", "invalid password", []string{""}, nil); !strings.Contains(err.Error(), "connection error") {
 		t.Error("Connect error: Expected connection error but got:", err)
 	}
 

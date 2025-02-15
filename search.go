@@ -21,7 +21,7 @@ func (c *Conn) Search(filter string, attrs []string, sizeLimit int) ([]*ldap.Ent
 	)
 	result, err := c.Conn.Search(search)
 	if err != nil {
-		return nil, fmt.Errorf(`Search error "%s": %w`, filter, err)
+		return nil, fmt.Errorf(`search error "%s": %w`, filter, err)
 	}
 
 	return result.Entries, nil
@@ -46,15 +46,15 @@ func (c *Conn) SearchOne(filter string, attrs []string) (*ldap.Entry, error) {
 	if err != nil {
 		if e, ok := err.(*ldap.Error); ok {
 			if e.ResultCode == ldap.LDAPResultSizeLimitExceeded {
-				return nil, fmt.Errorf(`Search error "%s": more than one entries returned`, filter)
+				return nil, fmt.Errorf(`search error "%s": more than one entries returned`, filter)
 			}
 		}
 
-		return nil, fmt.Errorf(`Search error "%s": %w`, filter, err)
+		return nil, fmt.Errorf(`search error "%s": %w`, filter, err)
 	}
 
 	if len(result.Entries) == 0 {
-		return nil, fmt.Errorf(`Search error "%s": no entries returned`, filter)
+		return nil, fmt.Errorf(`search error "%s": no entries returned`, filter)
 	}
 
 	return result.Entries[0], nil

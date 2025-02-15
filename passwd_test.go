@@ -40,7 +40,7 @@ func TestConnModifyDNPassword(t *testing.T) {
 		t.Fatal("Error binding to server: invalid credentials")
 	}
 
-	if err = conn.ModifyDNPassword("CN=Invalid User,"+testConfig.BaseDN, "TestPassword123!"); !strings.Contains(err.Error(), "Password error") {
+	if err = conn.ModifyDNPassword("CN=Invalid User,"+testConfig.BaseDN, "TestPassword123!"); !strings.Contains(err.Error(), "password error") {
 		t.Error("Invalid DN: Expected password error but got:", err)
 	}
 
@@ -55,7 +55,7 @@ func TestConnModifyDNPassword(t *testing.T) {
 	}
 
 	var long = "A123!aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	if err = conn.ModifyDNPassword(dn, long); !strings.Contains(err.Error(), "Password error") {
+	if err = conn.ModifyDNPassword(dn, long); !strings.Contains(err.Error(), "password error") {
 		t.Fatal("Long password: Expected password error but got:", err)
 	}
 
@@ -136,7 +136,7 @@ func TestUpdatePassword(t *testing.T) {
 		t.Fatal("ModifyDNPassword: Expected err to be nil but got:", err)
 	}
 
-	if err = UpdatePassword(config, testConfig.PasswordUPN, "invalid password", "Random654!"); !strings.Contains(err.Error(), "Password error") {
+	if err = UpdatePassword(config, testConfig.PasswordUPN, "invalid password", "Random654!"); !strings.Contains(err.Error(), "password error") {
 		t.Fatal("Invalid password: Expected password error but got:", err)
 	}
 
