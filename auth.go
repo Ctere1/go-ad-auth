@@ -4,8 +4,8 @@ import (
 	ldap "github.com/go-ldap/ldap/v3"
 )
 
-//Authenticate checks if the given credentials are valid, or returns an error if one occurred.
-//username may be either the sAMAccountName or the userPrincipalName.
+// Authenticate checks if the given credentials are valid, or returns an error if one occurred.
+// username may be either the sAMAccountName or the userPrincipalName.
 func Authenticate(config *Config, username, password string) (bool, error) {
 	upn, err := config.UPN(username)
 	if err != nil {
@@ -21,11 +21,11 @@ func Authenticate(config *Config, username, password string) (bool, error) {
 	return conn.Bind(upn, password)
 }
 
-//AuthenticateExtended checks if the given credentials are valid, or returns an error if one occurred.
-//username may be either the sAMAccountName or the userPrincipalName.
-//entry is the *ldap.Entry that holds the DN and any request attributes of the user.
-//If groups is non-empty, userGroups will hold which of those groups the user is a member of.
-//groups can be a list of groups referenced by DN or cn and the format provided will be the format returned.
+// AuthenticateExtended checks if the given credentials are valid, or returns an error if one occurred.
+// username may be either the sAMAccountName or the userPrincipalName.
+// entry is the *ldap.Entry that holds the DN and any request attributes of the user.
+// If groups is non-empty, userGroups will hold which of those groups the user is a member of.
+// groups can be a list of groups referenced by DN or cn and the format provided will be the format returned.
 func AuthenticateExtended(config *Config, username, password string, attrs, groups []string) (status bool, entry *ldap.Entry, userGroups []string, err error) {
 	upn, err := config.UPN(username)
 	if err != nil {
@@ -60,17 +60,19 @@ func AuthenticateExtended(config *Config, username, password string, attrs, grou
 			return false, nil, nil, err
 		}
 
+		groupMap := make(map[string]struct{}, len(foundGroups))
+		for _, userGroup := range foundGroups {
+			groupMap[userGroup.DN] = struct{}{}
+		}
+
 		for _, group := range groups {
 			groupDN, err := conn.GroupDN(group)
 			if err != nil {
 				return false, nil, nil, err
 			}
 
-			for _, userGroup := range foundGroups {
-				if userGroup.DN == groupDN {
-					userGroups = append(userGroups, group)
-					break
-				}
+			if _, exists := groupMap[groupDN]; exists {
+				userGroups = append(userGroups, group)
 			}
 		}
 	}
