@@ -18,19 +18,19 @@ type Conn struct {
 func (c *Config) Connect() (*Conn, error) {
 	switch c.Security {
 	case SecurityNone:
-		conn, err := ldap.DialURL(fmt.Sprintf("%s:%d", c.Server, c.Port))
+		conn, err := ldap.DialURL(fmt.Sprintf("ldap://%s:%d", c.Server, c.Port))
 		if err != nil {
 			return nil, fmt.Errorf("connection error: %w", err)
 		}
 		return &Conn{Conn: conn, Config: c}, nil
 	case SecurityTLS:
-		conn, err := ldap.DialURL(fmt.Sprintf("%s:%d", c.Server, c.Port), ldap.DialWithTLSConfig(&tls.Config{ServerName: c.Server, RootCAs: c.RootCAs}))
+		conn, err := ldap.DialURL(fmt.Sprintf("ldaps://%s:%d", c.Server, c.Port), ldap.DialWithTLSConfig(&tls.Config{ServerName: c.Server, RootCAs: c.RootCAs}))
 		if err != nil {
 			return nil, fmt.Errorf("connection error: %w", err)
 		}
 		return &Conn{Conn: conn, Config: c}, nil
 	case SecurityStartTLS:
-		conn, err := ldap.DialURL(fmt.Sprintf("%s:%d", c.Server, c.Port))
+		conn, err := ldap.DialURL(fmt.Sprintf("ldap://%s:%d", c.Server, c.Port))
 		if err != nil {
 			return nil, fmt.Errorf("connection error: %w", err)
 		}
@@ -40,13 +40,13 @@ func (c *Config) Connect() (*Conn, error) {
 		}
 		return &Conn{Conn: conn, Config: c}, nil
 	case SecurityInsecureTLS:
-		conn, err := ldap.DialURL(fmt.Sprintf("%s:%d", c.Server, c.Port), ldap.DialWithTLSConfig(&tls.Config{ServerName: c.Server, InsecureSkipVerify: true}))
+		conn, err := ldap.DialURL(fmt.Sprintf("ldaps://%s:%d", c.Server, c.Port), ldap.DialWithTLSConfig(&tls.Config{ServerName: c.Server, InsecureSkipVerify: true}))
 		if err != nil {
 			return nil, fmt.Errorf("connection error: %w", err)
 		}
 		return &Conn{Conn: conn, Config: c}, nil
 	case SecurityInsecureStartTLS:
-		conn, err := ldap.DialURL(fmt.Sprintf("%s:%d", c.Server, c.Port))
+		conn, err := ldap.DialURL(fmt.Sprintf("ldap://%s:%d", c.Server, c.Port))
 		if err != nil {
 			return nil, fmt.Errorf("connection error: %w", err)
 		}
