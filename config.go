@@ -68,19 +68,18 @@ func (c *Config) UPN(username string) (string, error) {
 //
 // Returns:
 //   - formattedUsername (string): The username formatted as "DOMAIN\username". If LegacyDomainName is set, this value will be "LegacyDomainName\username". Otherwise, the extracted domain from the input username is used, resulting in "ExtractedDomain\username".
-//   - extractedUsername (string): The username part without the domain (e.g., "username"). This is useful for attribute-based LDAP lookups.
 //   - err (error): Returns an error if the username format is invalid or if the domain extraction fails.
-func (c *Config) SamAccountName(username string) (string, string, error) {
+func (c *Config) SamAccountName(username string) (string, error) {
 	// Split username into user and domain parts
 	parts := strings.SplitN(username, "@", 2)
 	if len(parts) != 2 {
-		return "", "", fmt.Errorf("invalid username format: %s", username)
+		return "", fmt.Errorf("invalid username format: %s", username)
 	}
 
 	user := parts[0]
 	domainParts := strings.Split(parts[1], ".")
 	if len(domainParts) < 2 {
-		return "", "", fmt.Errorf("invalid domain format in username: %s", username)
+		return "", fmt.Errorf("invalid domain format in username: %s", username)
 	}
 
 	// Extract the first part of the domain (e.g., "test" from "test.com")
@@ -92,37 +91,32 @@ func (c *Config) SamAccountName(username string) (string, string, error) {
 	}
 
 	// Return "DOMAIN\username" format
-	return fmt.Sprintf("%s\\%s", domain, user), user, nil
+	return fmt.Sprintf("%s\\%s", domain, user), nil
 }
 
-// ExtractUserName determines the appropriate format for the given username based on the configuration settings.
+// ExtractUserName determines the correct username format based on configuration settings.
+//
 // If EnforceSamAccountNameSearch is enabled, it returns the sAMAccountName format in "DOMAIN\username" style.
 // Otherwise, it defaults to the userPrincipalName (UPN) format ("username@domain.com").
 //
 // Parameters:
-//   - username: The input username which can be in UPN format ("username@domain.com") or a simple username ("username").
+//   - username (string): The input username, which can be in UPN format ("username@domain.com") or a simple username ("username").
 //
 // Returns:
-//   - formattedUsername (string): The fully formatted username based on the configuration settings. This will be either: "DOMAIN\username" if EnforceSamAccountNameSearch is enabled. "username@domain.com" (UPN format) otherwise.
-//   - extractedUsername (string): The extracted username without the domain part. This is useful for attribute-based LDAP lookups.
+//   - formattedUsername (string): The fully formatted username based on the configuration settings.
+//   - "DOMAIN\username" if EnforceSamAccountNameSearch is enabled.
+//   - "username@domain.com" (UPN format) otherwise.
 //   - err (error): Returns an error if the username format is invalid or if domain resolution fails.
-func (c *Config) ExtractUserName(username string) (string, string, error) {
-	// Check if the username is an email address and return it as is
-	if _, err := mail.ParseAddress(username); err == nil {
-		return username, strings.Split(username, "@")[0], nil
+func (c *Config) ExtractUserName(username string) (string, error) {
+	upn, err := c.UPN(username)
+	if err != nil {
+		return "", err
 	}
 
 	// If EnforceSamAccountNameSearch is marked as true, then we will always search for the sAMAccountName
 	if c.EnforceSamAccountNameSearch {
-		return c.SamAccountName(username)
+		return c.SamAccountName(upn)
 	}
 
-	upn, err := c.UPN(username)
-	if err != nil {
-		return "", "", err
-	}
-
-	// return the username without the domain
-	user := strings.Split(upn, "@")[0]
-	return upn, user, nil
+	return upn, nil
 }

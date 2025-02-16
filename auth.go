@@ -7,7 +7,7 @@ import (
 // Authenticate checks if the given credentials are valid, or returns an error if one occurred.
 // username may be either the sAMAccountName or the userPrincipalName.
 func Authenticate(config *Config, username, password string) (bool, error) {
-	user, _, err := config.ExtractUserName(username)
+	user, err := config.ExtractUserName(username)
 	if err != nil {
 		return false, err
 	}
@@ -27,7 +27,7 @@ func Authenticate(config *Config, username, password string) (bool, error) {
 // If groups is non-empty, userGroups will hold which of those groups the user is a member of.
 // groups can be a list of groups referenced by DN or cn and the format provided will be the format returned.
 func AuthenticateExtended(config *Config, username, password string, attrs, groups []string) (status bool, entry *ldap.Entry, userGroups []string, err error) {
-	fullUserName, user, err := config.ExtractUserName(username)
+	user, err := config.ExtractUserName(username)
 	if err != nil {
 		return false, nil, nil, err
 	}
@@ -39,7 +39,7 @@ func AuthenticateExtended(config *Config, username, password string, attrs, grou
 	defer conn.Conn.Close()
 
 	//bind
-	status, err = conn.Bind(fullUserName, password)
+	status, err = conn.Bind(user, password)
 	if err != nil {
 		return false, nil, nil, err
 	}
