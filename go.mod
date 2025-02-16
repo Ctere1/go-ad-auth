@@ -1,4 +1,4 @@
-module github.com/Ctere1/go-ad-auth/v1
+module github.com/Ctere1/go-ad-auth
 
 go 1.24
 
