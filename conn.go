@@ -60,21 +60,21 @@ func (c *Config) Connect() (*Conn, error) {
 	}
 }
 
-// Bind authenticates the connection with the given userPrincipalName and password
+// Bind authenticates the connection with the given username and password
 // and returns the result or an error if one occurred.
-func (c *Conn) Bind(upn, password string) (bool, error) {
+func (c *Conn) Bind(username, password string) (bool, error) {
 	if password == "" {
 		return false, nil
 	}
 
-	err := c.Conn.Bind(upn, password)
+	err := c.Conn.Bind(username, password)
 	if err != nil {
 		if e, ok := err.(*ldap.Error); ok {
 			if e.ResultCode == ldap.LDAPResultInvalidCredentials {
 				return false, nil
 			}
 		}
-		return false, fmt.Errorf("Bind error (%s): %w", upn, err)
+		return false, fmt.Errorf("Bind error (%s): %w", username, err)
 	}
 
 	return true, nil
