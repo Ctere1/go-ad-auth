@@ -6,6 +6,65 @@ import (
 	"testing"
 )
 
+func TestPrimaryGroupSIDFilter(t *testing.T) {
+	t.Run("rewrites RID for valid SID", func(t *testing.T) {
+		sid, err := ParseSID("S-1-5-21-2562418665-3218585558-1813906818-1576")
+		if err != nil {
+			t.Fatalf("Expected SID parse to succeed: %v", err)
+		}
+
+		rawSID, err := sid.MarshalBinary()
+		if err != nil {
+			t.Fatalf("Expected SID marshal to succeed: %v", err)
+		}
+
+		filter, err := primaryGroupSIDFilter(rawSID, 513)
+		if err != nil {
+			t.Fatalf("Expected filter generation to succeed: %v", err)
+		}
+
+		expected, err := ParseSID("S-1-5-21-2562418665-3218585558-1813906818-513")
+		if err != nil {
+			t.Fatalf("Expected target SID parse to succeed: %v", err)
+		}
+
+		if filter != expected.FilterString() {
+			t.Fatalf("Expected filter %q but got %q", expected.FilterString(), filter)
+		}
+	})
+
+	t.Run("rejects malformed SID bytes", func(t *testing.T) {
+		_, err := primaryGroupSIDFilter([]byte{1, 1, 0, 0, 0, 0, 0, 5}, 513)
+		if err == nil {
+			t.Fatal("Expected error for malformed SID bytes but got nil")
+		}
+		if !strings.Contains(err.Error(), "invalid objectSid") {
+			t.Fatalf("Expected invalid objectSid error but got: %v", err)
+		}
+	})
+
+	t.Run("rejects SID without sub authorities", func(t *testing.T) {
+		sid := &SID{
+			Revision:            SIDRevision,
+			SubAuthorityLength:  0,
+			IdentifierAuthority: 5,
+		}
+
+		rawSID, err := sid.MarshalBinary()
+		if err != nil {
+			t.Fatalf("Expected SID marshal to succeed: %v", err)
+		}
+
+		_, err = primaryGroupSIDFilter(rawSID, 513)
+		if err == nil {
+			t.Fatal("Expected error for SID without sub authorities but got nil")
+		}
+		if !strings.Contains(err.Error(), "missing sub authorities") {
+			t.Fatalf("Expected missing sub authorities error but got: %v", err)
+		}
+	})
+}
+
 func dnToCN(dn string) string {
 	if splits := strings.Split(dn, ","); len(splits) >= 1 {
 		if splits2 := strings.Split(splits[0], "="); len(splits2) >= 2 {
@@ -32,7 +91,7 @@ func TestConnGroupDN(t *testing.T) {
 		return
 	}
 
-	config := &Config{Server: testConfig.Server, Port: testConfig.Port, Security: testConfig.BindSecurity, BaseDN: testConfig.BaseDN}
+	config := newTestConfig(testConfig.Port, testConfig.BaseDN)
 	conn, err := config.Connect()
 	if err != nil {
 		t.Fatal("Error connecting to server:", err)
@@ -99,7 +158,7 @@ func TestConnObjectGroups(t *testing.T) {
 		return
 	}
 
-	config := &Config{Server: testConfig.Server, Port: testConfig.Port, Security: testConfig.BindSecurity, BaseDN: testConfig.BaseDN}
+	config := newTestConfig(testConfig.Port, testConfig.BaseDN)
 	conn, err := config.Connect()
 	if err != nil {
 		t.Fatal("Error connecting to server:", err)
@@ -183,7 +242,7 @@ func TestConnObjectPrimaryGroup(t *testing.T) {
 		return
 	}
 
-	config := &Config{Server: testConfig.Server, Port: testConfig.Port, Security: testConfig.BindSecurity, BaseDN: testConfig.BaseDN}
+	config := newTestConfig(testConfig.Port, testConfig.BaseDN)
 	conn, err := config.Connect()
 	if err != nil {
 		t.Fatal("Error connecting to server:", err)

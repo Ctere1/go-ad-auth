@@ -14,6 +14,21 @@ type Conn struct {
 	Config *Config
 }
 
+type startTLSClient interface {
+	StartTLS(*tls.Config) error
+	Close() error
+}
+
+func startTLSAndCloseOnError(conn startTLSClient, config *tls.Config) error {
+	err := conn.StartTLS(config)
+	if err != nil {
+		_ = conn.Close()
+		return fmt.Errorf("connection error: %w", err)
+	}
+
+	return nil
+}
+
 // Connect returns an open connection to an Active Directory server or an error if one occurred.
 func (c *Config) Connect() (*Conn, error) {
 	switch c.Security {
@@ -24,7 +39,7 @@ func (c *Config) Connect() (*Conn, error) {
 		}
 		return &Conn{Conn: conn, Config: c}, nil
 	case SecurityTLS:
-		conn, err := ldap.DialURL(fmt.Sprintf("ldaps://%s:%d", c.Server, c.Port), ldap.DialWithTLSConfig(&tls.Config{ServerName: c.Server, RootCAs: c.RootCAs}))
+		conn, err := ldap.DialURL(fmt.Sprintf("ldaps://%s:%d", c.Server, c.Port), ldap.DialWithTLSConfig(&tls.Config{ServerName: c.tlsServerName(), RootCAs: c.RootCAs}))
 		if err != nil {
 			return nil, fmt.Errorf("connection error: %w", err)
 		}
@@ -34,13 +49,13 @@ func (c *Config) Connect() (*Conn, error) {
 		if err != nil {
 			return nil, fmt.Errorf("connection error: %w", err)
 		}
-		err = conn.StartTLS(&tls.Config{ServerName: c.Server, RootCAs: c.RootCAs})
+		err = startTLSAndCloseOnError(conn, &tls.Config{ServerName: c.tlsServerName(), RootCAs: c.RootCAs})
 		if err != nil {
-			return nil, fmt.Errorf("connection error: %w", err)
+			return nil, err
 		}
 		return &Conn{Conn: conn, Config: c}, nil
 	case SecurityInsecureTLS:
-		conn, err := ldap.DialURL(fmt.Sprintf("ldaps://%s:%d", c.Server, c.Port), ldap.DialWithTLSConfig(&tls.Config{ServerName: c.Server, InsecureSkipVerify: true}))
+		conn, err := ldap.DialURL(fmt.Sprintf("ldaps://%s:%d", c.Server, c.Port), ldap.DialWithTLSConfig(&tls.Config{ServerName: c.tlsServerName(), InsecureSkipVerify: true}))
 		if err != nil {
 			return nil, fmt.Errorf("connection error: %w", err)
 		}
@@ -50,9 +65,9 @@ func (c *Config) Connect() (*Conn, error) {
 		if err != nil {
 			return nil, fmt.Errorf("connection error: %w", err)
 		}
-		err = conn.StartTLS(&tls.Config{ServerName: c.Server, InsecureSkipVerify: true})
+		err = startTLSAndCloseOnError(conn, &tls.Config{ServerName: c.tlsServerName(), InsecureSkipVerify: true})
 		if err != nil {
-			return nil, fmt.Errorf("connection error: %w", err)
+			return nil, err
 		}
 		return &Conn{Conn: conn, Config: c}, nil
 	default:

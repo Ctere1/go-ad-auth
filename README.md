@@ -56,15 +56,19 @@ See more advanced examples on [go.dev](https://pkg.go.dev/github.com/Ctere1/go-a
 
 Most tests will be skipped unless you supply the following environment variables to connect to an Active Directory server:
 
-| Name                 | Description                                                                                           |
-| -------------------- | ----------------------------------------------------------------------------------------------------- |
-| ADTEST_SERVER        | Hostname or IP Address of an Active Directory server                                                  |
-| ADTEST_PORT          | Port to use - defaults to 389                                                                         |
-| ADTEST_BIND_UPN      | userPrincipalName (user@domain.tld) of admin user                                                     |
-| ADTEST_BIND_PASS     | Password of admin user                                                                                |
-| ADTEST_BIND_SECURITY | `NONE` \|\| `TLS` \|\| `STARTTLS` \|\| `INSECURETLS` \|\| `INSECURESTARTTLS` - defaults to `STARTTLS` |
-| ADTEST_BASEDN        | LDAP Base DN - for testing the root DN is recommended, e.g. `DC=example,DC=com`                       |
-| ADTEST_PASSWORD_UPN  | userPrincipalName of a test user that will be used to test password changing functions                |
+| Name                   | Description                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------------- |
+| ADTEST_SERVER          | Hostname or IP Address of an Active Directory server                                                    |
+| ADTEST_PORT            | Port to use - defaults to 389                                                                           |
+| ADTEST_BIND_UPN        | userPrincipalName (user@domain.tld) of admin user                                                       |
+| ADTEST_BIND_PASS       | Password of admin user                                                                                  |
+| ADTEST_BIND_SECURITY   | `NONE` \|\| `TLS` \|\| `STARTTLS` \|\| `INSECURETLS` \|\| `INSECURESTARTTLS` - defaults to `STARTTLS`   |
+| ADTEST_BASEDN          | LDAP Base DN - for testing the root DN is recommended, e.g. `DC=example,DC=com`                         |
+| ADTEST_ROOT_CA_FILE    | Optional path to a PEM-encoded CA certificate used to verify the AD TLS certificate                     |
+| ADTEST_TLS_SERVER_NAME | Optional TLS hostname override used for certificate verification when `ADTEST_SERVER` is an IP or alias |
+| ADTEST_PASSWORD_UPN    | userPrincipalName of a test user that will be used to test password changing functions                  |
+
+If your AD certificate is signed by a private CA, set `ADTEST_ROOT_CA_FILE` to that CA's PEM file. If you connect to AD by IP address but the certificate is issued for a DNS name, also set `ADTEST_TLS_SERVER_NAME` to the certificate's DNS name so TLS and StartTLS validation can still succeed.
 
 # Nested Groups
 
@@ -75,3 +79,5 @@ Most tests will be skipped unless you supply the following environment variables
 [SQL Injection](https://en.wikipedia.org/wiki/SQL_injection) is a well known attack vector, and most SQL libraries provide mitigations such as [prepared statements](https://en.wikipedia.org/wiki/Prepared_statement). Similarly, [LDAP Injection](https://www.owasp.org/index.php/Testing_for_LDAP_Injection_\(OTG-INPVAL-006\)), while not seen often in the wild, is something we should be concerned with.
 
 This library sanitizes inputs (with [`ldap.EscapeFilter`](https://pkg.go.dev/github.com/go-ldap/ldap/v3?tab=doc#EscapeFilter)) that are used to create LDAP filters in library functions, namely [`GetDN`](https://pkg.go.dev/github.com/Ctere1/go-ad-auth#Conn.GetDN) and [`GetAttributes`](https://pkg.go.dev/github.com/Ctere1/go-ad-auth#Conn.GetAttributes). This means high level functions in this library are protected against malicious inputs. If you use [`Search`](https://pkg.go.dev/github.com/Ctere1/go-ad-auth#Conn.Search) or [`SearchOne`](https://pkg.go.dev/github.com/Ctere1/go-ad-auth#Conn.SearchOne), take care to sanitize any untrusted inputs you use in your LDAP filter.
+
+This package preserves `SecurityNone` as the zero-value `Config.Security` setting for backward compatibility. That mode uses plaintext LDAP and should only be chosen intentionally on trusted networks. For production authentication, explicitly set `SecurityStartTLS` or `SecurityTLS`, configure trusted root CAs where needed, and ensure the TLS server name matches the certificate presented by Active Directory.

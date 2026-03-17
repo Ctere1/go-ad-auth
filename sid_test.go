@@ -84,3 +84,43 @@ func TestSID(t *testing.T) {
 		}
 	}
 }
+
+func TestSIDMarshalBinaryUsesSliceLength(t *testing.T) {
+	sid := &SID{
+		Revision:            SIDRevision,
+		SubAuthorityLength:  99,
+		IdentifierAuthority: 5,
+		SubAuthoritys:       []uint32{21, 50},
+	}
+
+	buf, err := sid.MarshalBinary()
+	if err != nil {
+		t.Fatalf("expected marshal to succeed: %v", err)
+	}
+
+	expected := []byte{1, 2, 0, 0, 0, 0, 0, 5, 21, 0, 0, 0, 50, 0, 0, 0}
+	if !bytes.Equal(expected, buf) {
+		t.Fatalf("expected marshaled sid %v but got %v", expected, buf)
+	}
+
+	if sid.FilterString() != `\01\02\00\00\00\00\00\05\15\00\00\00\32\00\00\00` {
+		t.Fatalf("unexpected filter string: %q", sid.FilterString())
+	}
+}
+
+func TestSIDMarshalBinaryRejectsTooManySubAuthorities(t *testing.T) {
+	subs := make([]uint32, 256)
+	sid := &SID{
+		Revision:            SIDRevision,
+		IdentifierAuthority: 5,
+		SubAuthoritys:       subs,
+	}
+
+	if _, err := sid.MarshalBinary(); err == nil {
+		t.Fatal("expected marshal to fail for too many sub authorities")
+	}
+
+	if sid.FilterString() != "" {
+		t.Fatalf("expected empty filter string for invalid sid but got %q", sid.FilterString())
+	}
+}

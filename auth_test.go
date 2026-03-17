@@ -17,7 +17,7 @@ func TestAuthenticate(t *testing.T) {
 		return
 	}
 
-	config := &Config{Server: testConfig.Server, Port: testConfig.Port, Security: testConfig.BindSecurity, BaseDN: testConfig.BaseDN}
+	config := newTestConfig(testConfig.Port, testConfig.BaseDN)
 
 	status, err := Authenticate(config, "go-ad-auth", "invalid password")
 	if err != nil {
@@ -27,12 +27,14 @@ func TestAuthenticate(t *testing.T) {
 		t.Error("Invalid credentials: Expected authenticate status to be false")
 	}
 
-	badConfig := &Config{Server: testConfig.Server, Port: testConfig.Port, Security: testConfig.BindSecurity, BaseDN: "Bad BaseDN"}
+	badConfig := newTestConfig(testConfig.Port, "Bad BaseDN")
 	if _, err = Authenticate(badConfig, "go-ad-auth", "invalid password"); !strings.Contains(err.Error(), "invalid BaseDN") {
 		t.Error("Invalid configuration: Expected invalid BaseDN error but got:", err)
 	}
 
 	badConfig = &Config{Server: "127.0.0.1", Port: 1, Security: testConfig.BindSecurity, BaseDN: testConfig.BaseDN}
+	badConfig.RootCAs = testConfig.RootCAs
+	badConfig.TLSServerName = testConfig.TLSServerName
 	if _, err = Authenticate(badConfig, "go-ad-auth", "invalid password"); !strings.Contains(err.Error(), "connection error") {
 		t.Error("Connect error: Expected connection error but got:", err)
 	}
@@ -47,7 +49,7 @@ func TestAuthenticate(t *testing.T) {
 		t.Fatal("Valid UPN: Expected err to be nil but got:", err)
 	}
 	if !status {
-		t.Error("Valid UPN: Expected authenticate status to be true")
+		t.Fatal("Valid UPN: Expected authenticate status to be true")
 	}
 
 	var username string
@@ -63,7 +65,7 @@ func TestAuthenticate(t *testing.T) {
 		t.Fatal("Valid username: Expected err to be nil but got:", err)
 	}
 	if !status {
-		t.Error("Valid username: Expected authenticate status to be true")
+		t.Fatal("Valid username: Expected authenticate status to be true")
 	}
 }
 
@@ -78,7 +80,7 @@ func TestAuthenticateExtended(t *testing.T) {
 		return
 	}
 
-	config := &Config{Server: testConfig.Server, Port: testConfig.Port, Security: testConfig.BindSecurity, BaseDN: testConfig.BaseDN}
+	config := newTestConfig(testConfig.Port, testConfig.BaseDN)
 
 	status, _, _, err := AuthenticateExtended(config, "go-ad-auth", "invalid password", []string{""}, nil)
 	if err != nil {
@@ -88,12 +90,14 @@ func TestAuthenticateExtended(t *testing.T) {
 		t.Error("Invalid credentials: Expected authenticate status to be false")
 	}
 
-	badConfig := &Config{Server: testConfig.Server, Port: testConfig.Port, Security: testConfig.BindSecurity, BaseDN: "Bad BaseDN"}
+	badConfig := newTestConfig(testConfig.Port, "Bad BaseDN")
 	if _, _, _, err = AuthenticateExtended(badConfig, "go-ad-auth", "invalid password", []string{""}, nil); !strings.Contains(err.Error(), "invalid BaseDN") {
 		t.Error("Invalid configuration: Expected invalid BaseDN error but got:", err)
 	}
 
 	badConfig = &Config{Server: "127.0.0.1", Port: 1, Security: testConfig.BindSecurity, BaseDN: testConfig.BaseDN}
+	badConfig.RootCAs = testConfig.RootCAs
+	badConfig.TLSServerName = testConfig.TLSServerName
 	if _, _, _, err = AuthenticateExtended(badConfig, "go-ad-auth", "invalid password", []string{""}, nil); !strings.Contains(err.Error(), "connection error") {
 		t.Error("Connect error: Expected connection error but got:", err)
 	}
@@ -108,7 +112,7 @@ func TestAuthenticateExtended(t *testing.T) {
 		t.Fatal("Valid UPN: Expected err to be nil but got:", err)
 	}
 	if !status {
-		t.Error("Valid UPN: Expected authenticate status to be true")
+		t.Fatal("Valid UPN: Expected authenticate status to be true")
 	}
 
 	var username string
@@ -124,7 +128,7 @@ func TestAuthenticateExtended(t *testing.T) {
 		t.Fatal("Valid username: Expected err to be nil but got:", err)
 	}
 	if !status {
-		t.Error("Valid username: Expected authenticate status to be true")
+		t.Fatal("Valid username: Expected authenticate status to be true")
 	}
 
 	status, entry, _, err := AuthenticateExtended(config, testConfig.BindUPN, testConfig.BindPass, []string{"memberOf"}, nil)
@@ -132,7 +136,7 @@ func TestAuthenticateExtended(t *testing.T) {
 		t.Fatal("memberOf attrs: Expected err to be nil but got:", err)
 	}
 	if !status {
-		t.Error("memberOf attrs: Expected authenticate status to be true")
+		t.Fatal("memberOf attrs: Expected authenticate status to be true")
 	}
 
 	//use dn for even groups and cn for odd groups
@@ -154,7 +158,7 @@ func TestAuthenticateExtended(t *testing.T) {
 		t.Fatal("memberOf attrs: Expected err to be nil but got:", err)
 	}
 	if !status {
-		t.Error("memberOf attrs: Expected authenticate status to be true")
+		t.Fatal("memberOf attrs: Expected authenticate status to be true")
 	}
 
 	sort.Strings(checkGroups)

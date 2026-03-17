@@ -24,7 +24,7 @@ func TestConnModifyDNPassword(t *testing.T) {
 		return
 	}
 
-	config := &Config{Server: testConfig.Server, Port: testConfig.Port, Security: testConfig.BindSecurity, BaseDN: testConfig.BaseDN}
+	config := newTestConfig(testConfig.Port, testConfig.BaseDN)
 	conn, err := config.Connect()
 	if err != nil {
 		t.Fatal("Error connecting to server:", err)
@@ -111,7 +111,7 @@ func TestUpdatePassword(t *testing.T) {
 		return
 	}
 
-	config := &Config{Server: testConfig.Server, Port: testConfig.Port, Security: testConfig.BindSecurity, BaseDN: testConfig.BaseDN}
+	config := newTestConfig(testConfig.Port, testConfig.BaseDN)
 	conn, err := config.Connect()
 	if err != nil {
 		t.Fatal("Error connecting to server:", err)

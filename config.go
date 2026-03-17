@@ -11,7 +11,8 @@ import (
 // SecurityType specifies the type of security to use when connecting to an Active Directory Server.
 type SecurityType int
 
-// Security will default to SecurityNone if not given.
+// Security defaults to SecurityNone if not set, which means plaintext LDAP.
+// Callers should explicitly choose a secure mode such as SecurityStartTLS or SecurityTLS.
 const (
 	SecurityNone SecurityType = iota
 	SecurityTLS
@@ -27,8 +28,17 @@ type Config struct {
 	BaseDN                      string         // BaseDN specifies the base distinguished name to use for searches.
 	Security                    SecurityType   // Security specifies the type of security to use when connecting to the server.
 	RootCAs                     *x509.CertPool // RootCAs specifies the set of root certificate authorities to use when verifying server certificates.
+	TLSServerName               string         // TLSServerName optionally overrides the hostname used for TLS certificate verification.
 	EnforceSamAccountNameSearch bool           // If true, forces searches to use sAMAccountName instead of userPrincipalName.
 	LegacyDomainName            string         // Specifies the domain to use for legacy (Pre-Windows 2000) logins in DOMAIN\username format.
+}
+
+func (c *Config) tlsServerName() string {
+	if c.TLSServerName != "" {
+		return c.TLSServerName
+	}
+
+	return c.Server
 }
 
 // Domain returns the domain derived from BaseDN or an error if misconfigured.

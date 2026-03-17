@@ -73,19 +73,24 @@ func (sid *SID) UnmarshalBinary(buf []byte) error {
 
 // MarshalBinary implements the encoding.BinaryMarshaler interface
 func (sid *SID) MarshalBinary() ([]byte, error) {
-	return sid.marshalBinary(), nil
+	return sid.marshalBinary()
 }
 
-func (sid *SID) marshalBinary() []byte {
-	buf := make([]byte, 8+4*int(sid.SubAuthorityLength))
+func (sid *SID) marshalBinary() ([]byte, error) {
+	subAuthorityLength := len(sid.SubAuthoritys)
+	if subAuthorityLength > 255 {
+		return nil, fmt.Errorf("invalid sid: too many sub authorities (%d)", subAuthorityLength)
+	}
+
+	buf := make([]byte, 8+4*subAuthorityLength)
 	binary.BigEndian.PutUint64(buf, sid.IdentifierAuthority)
 	buf[0] = sid.Revision
-	buf[1] = sid.SubAuthorityLength
-	for idx := 0; idx < int(sid.SubAuthorityLength); idx++ {
+	buf[1] = byte(subAuthorityLength)
+	for idx := 0; idx < subAuthorityLength; idx++ {
 		binary.LittleEndian.PutUint32(buf[8+4*idx:8+4*idx+4], sid.SubAuthoritys[idx])
 	}
 
-	return buf
+	return buf, nil
 }
 
 // String returns the string representation of sid, e.g. "S-1-5-..."
@@ -132,7 +137,10 @@ func ParseSID(s string) (*SID, error) {
 // FilterString returns an escaped binary representation of sid suitable for use in ldap filters.
 // e.g. filter := fmt.Sprintf("(objectSid=%s)", sid.FilterString())
 func (sid *SID) FilterString() string {
-	buf := sid.marshalBinary()
+	buf, err := sid.marshalBinary()
+	if err != nil {
+		return ""
+	}
 
 	var filter strings.Builder
 	for _, b := range buf {

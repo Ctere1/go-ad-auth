@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"strconv"
@@ -72,14 +71,9 @@ func (c *Conn) ObjectPrimaryGroup(attr, value string) (string, error) {
 		return "", fmt.Errorf(`parse error: invalid primaryGroupID ("%s"): %w`, gidStr, err)
 	}
 
-	uSID := entry.GetRawAttributeValue("objectSid")
-	gSID := make([]byte, len(uSID))
-	copy(gSID, uSID)
-	binary.LittleEndian.PutUint32(gSID[len(gSID)-4:], uint32(gid))
-
-	encoded := ""
-	for _, b := range gSID {
-		encoded += fmt.Sprintf(`\%02x`, b)
+	encoded, err := primaryGroupSIDFilter(entry.GetRawAttributeValue("objectSid"), uint32(gid))
+	if err != nil {
+		return "", err
 	}
 
 	entry, err = c.SearchOne(fmt.Sprintf("(objectSid=%s)", encoded), nil)
@@ -88,4 +82,18 @@ func (c *Conn) ObjectPrimaryGroup(attr, value string) (string, error) {
 	}
 
 	return entry.DN, nil
+}
+
+func primaryGroupSIDFilter(rawSID []byte, gid uint32) (string, error) {
+	var sid SID
+	if err := sid.UnmarshalBinary(rawSID); err != nil {
+		return "", fmt.Errorf("search error: invalid objectSid: %w", err)
+	}
+
+	if len(sid.SubAuthoritys) == 0 {
+		return "", errors.New("search error: invalid objectSid: missing sub authorities")
+	}
+
+	sid.SubAuthoritys[len(sid.SubAuthoritys)-1] = gid
+	return sid.FilterString(), nil
 }
