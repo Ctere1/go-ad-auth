@@ -108,6 +108,72 @@ func TestSIDMarshalBinaryUsesSliceLength(t *testing.T) {
 	}
 }
 
+func TestSIDRID(t *testing.T) {
+	withSubs, err := ParseSID("S-1-5-21-1-2-1576")
+	if err != nil {
+		t.Fatalf("ParseSID failed: %v", err)
+	}
+	if rid := withSubs.RID(); rid != 1576 {
+		t.Errorf("RID() = %d, want 1576", rid)
+	}
+
+	// A SID with no sub authorities has no RID; RID must return 0 rather than panic.
+	empty := &SID{Revision: SIDRevision, IdentifierAuthority: 5}
+	if rid := empty.RID(); rid != 0 {
+		t.Errorf("RID() on empty sub authorities = %d, want 0", rid)
+	}
+}
+
+func TestSIDMarshalBinaryRejectsOversizedAuthority(t *testing.T) {
+	// IdentifierAuthority is a 6-byte (48-bit) field per MS-DTYP §2.4.2.1.
+	sid := &SID{
+		Revision:            SIDRevision,
+		IdentifierAuthority: uint64(1) << 48,
+		SubAuthoritys:       []uint32{21},
+	}
+
+	if _, err := sid.MarshalBinary(); err == nil {
+		t.Fatal("expected marshal to fail for oversized identifier authority")
+	}
+	if sid.FilterString() != "" {
+		t.Fatalf("expected empty filter string for invalid sid, got %q", sid.FilterString())
+	}
+}
+
+func TestSIDRoundTrip(t *testing.T) {
+	// Parse → String and Marshal → Unmarshal must both be lossless for well-known SIDs.
+	cases := []string{
+		"S-1-5-21-2562418665-3218585558-1813906818-1576",
+		"S-1-5-32-544", // BUILTIN\Administrators
+		"S-1-1-0",      // Everyone
+		"S-1-5-18",     // Local System
+	}
+	for _, want := range cases {
+		t.Run(want, func(t *testing.T) {
+			sid, err := ParseSID(want)
+			if err != nil {
+				t.Fatalf("ParseSID(%q) failed: %v", want, err)
+			}
+			if got := sid.String(); got != want {
+				t.Fatalf("String() = %q, want %q", got, want)
+			}
+
+			buf, err := sid.MarshalBinary()
+			if err != nil {
+				t.Fatalf("MarshalBinary failed: %v", err)
+			}
+
+			var rt SID
+			if err := rt.UnmarshalBinary(buf); err != nil {
+				t.Fatalf("UnmarshalBinary failed: %v", err)
+			}
+			if !sid.Equal(&rt) {
+				t.Fatalf("binary round-trip mismatch for %q", want)
+			}
+		})
+	}
+}
+
 func TestSIDMarshalBinaryRejectsTooManySubAuthorities(t *testing.T) {
 	subs := make([]uint32, 256)
 	sid := &SID{

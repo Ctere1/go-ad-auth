@@ -75,6 +75,32 @@ func dnToCN(dn string) string {
 	return ""
 }
 
+func TestConnGroupDNPassthrough(t *testing.T) {
+	// A value that already looks like a DN ending in the BaseDN is returned without a server
+	// round-trip. The BaseDN suffix is matched case-insensitively (RFC 4514), so these run
+	// offline against a Conn with no live connection.
+	conn := &Conn{Config: &Config{BaseDN: "DC=example,DC=com"}}
+
+	tests := []struct {
+		name string
+		in   string
+	}{
+		{"exact case dn", "CN=Admins,OU=Groups,DC=example,DC=com"},
+		{"mixed case dn", "cn=Admins,ou=Groups,dc=Example,dc=Com"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := conn.GroupDN(tt.in)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tt.in {
+				t.Fatalf("GroupDN(%q) = %q, want it returned unchanged", tt.in, got)
+			}
+		})
+	}
+}
+
 func TestConnGroupDN(t *testing.T) {
 	if testConfig.Server == "" {
 		t.Skip("ADTEST_SERVER not set")

@@ -8,6 +8,24 @@ import (
 	"time"
 )
 
+func TestModifyDNPasswordRejectsCleartextConnection(t *testing.T) {
+	// AD requires a confidential channel for unicodePwd writes; the guard fails fast on
+	// SecurityNone before any password material is transmitted, so this runs offline.
+	conn := &Conn{Config: &Config{Security: SecurityNone}}
+
+	err := conn.ModifyDNPassword("CN=user,dc=example,dc=com", "NewPass123!")
+	if err == nil || !strings.Contains(err.Error(), "password error") {
+		t.Fatalf("expected password error over cleartext connection, got: %v", err)
+	}
+}
+
+func TestUpdatePasswordRejectsCleartextConnection(t *testing.T) {
+	err := UpdatePassword(&Config{Security: SecurityNone, BaseDN: "dc=example,dc=com"}, "user", "old", "new")
+	if err == nil || !strings.Contains(err.Error(), "password error") {
+		t.Fatalf("expected password error over cleartext connection, got: %v", err)
+	}
+}
+
 func TestConnModifyDNPassword(t *testing.T) {
 	if testConfig.Server == "" {
 		t.Skip("ADTEST_SERVER not set")
@@ -141,8 +159,8 @@ func TestUpdatePassword(t *testing.T) {
 	}
 
 	//choose random password to get around AD password history
-	rand.Seed(time.Now().Unix())
-	randPass := fmt.Sprintf("Random%d!", rand.Int31())
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	randPass := fmt.Sprintf("Random%d!", rng.Int31())
 
 	if err = UpdatePassword(config, testConfig.PasswordUPN, "Random456!", randPass); err != nil {
 		t.Fatal("Valid password: Expected err to be nil but got:", err)

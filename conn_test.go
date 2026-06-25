@@ -2,6 +2,7 @@ package auth
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"strings"
 	"testing"
@@ -63,6 +64,64 @@ func TestConfigConnect(t *testing.T) {
 	}
 	if _, err := (&Config{Server: testConfig.Server, Port: testConfig.Port, Security: SecurityInsecureStartTLS}).Connect(); err != nil {
 		t.Error("SecurityInsecureStartTLS: Expected connect error to be nil but got:", err)
+	}
+}
+
+func TestConfigTLSConfig(t *testing.T) {
+	pool := x509.NewCertPool()
+	c := &Config{Server: "ldap.example.com", RootCAs: pool}
+
+	tests := []struct {
+		name     string
+		insecure bool
+	}{
+		{"verifying mode", false},
+		{"insecure mode", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := c.tlsConfig(tt.insecure)
+
+			// RFC 8996: TLS 1.0/1.1 are deprecated; the floor must be pinned to 1.2.
+			if cfg.MinVersion != tls.VersionTLS12 {
+				t.Errorf("MinVersion = %x, want TLS 1.2 (%x)", cfg.MinVersion, tls.VersionTLS12)
+			}
+			if cfg.ServerName != "ldap.example.com" {
+				t.Errorf("ServerName = %q, want ldap.example.com", cfg.ServerName)
+			}
+			if cfg.InsecureSkipVerify != tt.insecure {
+				t.Errorf("InsecureSkipVerify = %v, want %v", cfg.InsecureSkipVerify, tt.insecure)
+			}
+			// RootCAs must be carried only by the verifying config, never the insecure one.
+			if tt.insecure && cfg.RootCAs != nil {
+				t.Error("insecure config must not carry RootCAs")
+			}
+			if !tt.insecure && cfg.RootCAs != pool {
+				t.Error("verifying config must carry the configured RootCAs")
+			}
+		})
+	}
+}
+
+func TestConfigTLSConfigServerNameOverride(t *testing.T) {
+	c := &Config{Server: "ldap.example.com", TLSServerName: "override.example.com"}
+	if got := c.tlsConfig(false).ServerName; got != "override.example.com" {
+		t.Fatalf("ServerName = %q, want override.example.com", got)
+	}
+}
+
+func TestConnBindEmptyPassword(t *testing.T) {
+	// RFC 4513 §5.1.2: a simple bind with an empty password must never be treated as a
+	// successful (unauthenticated) bind. The guard short-circuits before any network use,
+	// so this is exercised without a live server.
+	conn := &Conn{Config: &Config{}}
+
+	status, err := conn.Bind("someone", "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if status {
+		t.Fatal("empty password must not authenticate")
 	}
 }
 

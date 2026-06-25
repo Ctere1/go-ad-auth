@@ -11,6 +11,10 @@ import (
 // ModifyDNPassword sets a new password for the given user or returns an error if one occurred.
 // ModifyDNPassword is used for resetting user passwords using administrative privileges.
 func (c *Conn) ModifyDNPassword(dn, newPasswd string) error {
+	if c.Config.Security == SecurityNone {
+		return errors.New("password error: refusing to modify unicodePwd over a cleartext connection; use a TLS-based SecurityType")
+	}
+
 	utf16 := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
 	encoded, err := utf16.NewEncoder().String(fmt.Sprintf(`"%s"`, newPasswd))
 	if err != nil {
@@ -31,6 +35,10 @@ func (c *Conn) ModifyDNPassword(dn, newPasswd string) error {
 // UpdatePassword checks if the given credentials are valid and updates the password if they are,
 // or returns an error if one occurred. UpdatePassword is used for users resetting their own password.
 func UpdatePassword(config *Config, username, oldPasswd, newPasswd string) error {
+	if config.Security == SecurityNone {
+		return errors.New("password error: refusing to modify unicodePwd over a cleartext connection; use a TLS-based SecurityType")
+	}
+
 	utf16 := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
 	oldEncoded, err := utf16.NewEncoder().String(fmt.Sprintf(`"%s"`, oldPasswd))
 	if err != nil {

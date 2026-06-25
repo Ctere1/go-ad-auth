@@ -10,8 +10,13 @@ import (
 const LDAPMatchingRuleInChain = "1.2.840.113556.1.4.1941"
 
 // GroupDN returns the DN of the group with the given cn or an error if one occurred.
+// If group already appears to be a DN (it contains an attribute assertion and ends with the
+// configured BaseDN), it is returned unchanged. The BaseDN suffix is matched case-insensitively
+// because, per RFC 4514, DN attribute types are case-insensitive and DC values are not
+// case-sensitive in Active Directory.
 func (c *Conn) GroupDN(group string) (string, error) {
-	if strings.HasSuffix(group, c.Config.BaseDN) {
+	if strings.Contains(group, "=") &&
+		strings.HasSuffix(strings.ToLower(group), strings.ToLower(c.Config.BaseDN)) {
 		return group, nil
 	}
 

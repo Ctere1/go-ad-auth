@@ -77,6 +77,30 @@ func (c *Conn) GetAttributes(attr, value string, attrs []string) (*ldap.Entry, e
 	return c.SearchOne(fmt.Sprintf("(%s=%s)", ldap.EscapeFilter(attr), ldap.EscapeFilter(value)), attrs)
 }
 
+// adPageSize is the page size used for paged group-membership searches. Active Directory's
+// default MaxPageSize is 1000; using the Simple Paged Results control (RFC 2696) lets us
+// retrieve the complete membership set across multiple pages instead of being silently
+// truncated at the first 1000 entries.
+const adPageSize = 1000
+
 func (c *Conn) getGroups(dn string) ([]*ldap.Entry, error) {
-	return c.Search(fmt.Sprintf("(member:%s:=%s)", LDAPMatchingRuleInChain, ldap.EscapeFilter(dn)), []string{""}, 1000)
+	filter := fmt.Sprintf("(member:%s:=%s)", LDAPMatchingRuleInChain, ldap.EscapeFilter(dn))
+	search := ldap.NewSearchRequest(
+		c.Config.BaseDN,
+		ldap.ScopeWholeSubtree,
+		ldap.DerefAlways,
+		0, // no client-side size limit; paging retrieves the full result set
+		0,
+		false,
+		filter,
+		[]string{""},
+		nil,
+	)
+
+	result, err := c.Conn.SearchWithPaging(search, adPageSize)
+	if err != nil {
+		return nil, fmt.Errorf(`search error "%s": %w`, filter, err)
+	}
+
+	return result.Entries, nil
 }

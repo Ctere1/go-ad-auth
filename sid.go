@@ -76,10 +76,17 @@ func (sid *SID) MarshalBinary() ([]byte, error) {
 	return sid.marshalBinary()
 }
 
+// maxIdentifierAuthority is the largest value representable in the 6-byte (48-bit)
+// IdentifierAuthority field defined by MS-DTYP §2.4.2.1.
+const maxIdentifierAuthority = uint64(1)<<48 - 1
+
 func (sid *SID) marshalBinary() ([]byte, error) {
 	subAuthorityLength := len(sid.SubAuthoritys)
 	if subAuthorityLength > 255 {
 		return nil, fmt.Errorf("invalid sid: too many sub authorities (%d)", subAuthorityLength)
+	}
+	if sid.IdentifierAuthority > maxIdentifierAuthority {
+		return nil, fmt.Errorf("invalid sid: identifier authority out of range (%d)", sid.IdentifierAuthority)
 	}
 
 	buf := make([]byte, 8+4*subAuthorityLength)

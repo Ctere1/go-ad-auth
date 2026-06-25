@@ -7,7 +7,7 @@ import (
 // Authenticate checks if the given credentials are valid, or returns an error if one occurred.
 // username may be either the sAMAccountName or the userPrincipalName.
 func Authenticate(config *Config, username, password string) (bool, error) {
-	user, err := config.ExtractUserName(username)
+	id, err := config.Resolve(username)
 	if err != nil {
 		return false, err
 	}
@@ -18,7 +18,7 @@ func Authenticate(config *Config, username, password string) (bool, error) {
 	}
 	defer conn.Conn.Close()
 
-	return conn.Bind(user, password)
+	return conn.Bind(id.BindName, password)
 }
 
 // AuthenticateExtended checks if the given credentials are valid, or returns an error if one occurred.
@@ -27,7 +27,7 @@ func Authenticate(config *Config, username, password string) (bool, error) {
 // If groups is non-empty, userGroups will hold which of those groups the user is a member of.
 // groups can be a list of groups referenced by DN or cn and the format provided will be the format returned.
 func AuthenticateExtended(config *Config, username, password string, attrs, groups []string) (status bool, entry *ldap.Entry, userGroups []string, err error) {
-	user, err := config.ExtractUserName(username)
+	id, err := config.Resolve(username)
 	if err != nil {
 		return false, nil, nil, err
 	}
@@ -39,7 +39,7 @@ func AuthenticateExtended(config *Config, username, password string, attrs, grou
 	defer conn.Conn.Close()
 
 	//bind
-	status, err = conn.Bind(user, password)
+	status, err = conn.Bind(id.BindName, password)
 	if err != nil {
 		return false, nil, nil, err
 	}
@@ -47,14 +47,8 @@ func AuthenticateExtended(config *Config, username, password string, attrs, grou
 		return false, nil, nil, nil
 	}
 
-	// Determine search attribute
-	attr := "userPrincipalName"
-	if config.EnforceSamAccountNameSearch {
-		attr = "sAMAccountName"
-	}
-
-	// Retrieve user attributes
-	entry, err = conn.GetAttributes(attr, user, attrs)
+	// Retrieve user attributes using the resolved search predicate (bare sAMAccountName or UPN).
+	entry, err = conn.GetAttributes(id.SearchAttribute, id.SearchValue, attrs)
 	if err != nil {
 		return false, nil, nil, err
 	}
